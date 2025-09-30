@@ -1,0 +1,167 @@
+{
+  "@@locale": "en",
+  "appTitle": "KalPay",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "tagline": "Smart PayLater for Shops",
+  "@tagline": {
+    "description": "App tagline"
+  },
+  
+  "welcome": "Welcome",
+  "continueText": "Continue",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "done": "Done",
+  "retry": "Retry",
+  "refresh": "Refresh",
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success",
+  "warning": "Warning",
+  "info": "Information",
+  
+  "phoneNumber": "Phone Number",
+  "enterPhoneNumber": "Enter your phone number",
+  "otp": "OTP",
+  "enterOtp": "Enter OTP",
+  "verifyOtp": "Verify OTP",
+  "resendOtp": "Resend OTP",
+  "otpSent": "OTP sent to {phoneNumber}",
+  "@otpSent": {
+    "placeholders": {
+      "phoneNumber": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "selectRole": "Select your role",
+  "shopkeeper": "I'm a shopkeeper",
+  "customer": "I'm a customer",
+  "termsConditions": "By continuing, you agree to Terms & Conditions",
+  
+  "home": "Home",
+  "customers": "Customers",
+  "reports": "Reports",
+  "settings": "Settings",
+  
+  "dashboard": "Dashboard",
+  "outstanding": "Outstanding",
+  "dueToday": "Due Today",
+  "paidThisMonth": "Paid This Month",
+  "totalSales": "Total Sales",
+  "totalPaid": "Total Paid",
+  "totalOutstanding": "Total Outstanding",
+  
+  "addSale": "Add Sale",
+  "scanQr": "Scan QR",
+  "requestPayment": "Request Payment",
+  "addCustomer": "Add Customer",
+  "markPaid": "Mark as Paid",
+  "remind": "Remind",
+  
+  "customerName": "Customer Name",
+  "customerPhone": "Customer Phone",
+  "amount": "Amount",
+  "note": "Note",
+  "item": "Item",
+  "dueDate": "Due Date",
+  "payNow": "Pay Now",
+  "payLater": "Pay Later",
+  "cash": "Cash",
+  "upi": "UPI",
+  "other": "Other",
+  
+  "paid": "Paid",
+  "pending": "Pending",
+  "overdue": "Overdue",
+  "partial": "Partial",
+  
+  "recentTransactions": "Recent Transactions",
+  "allTransactions": "All Transactions",
+  "addTransaction": "Add Transaction",
+  "transactionDetails": "Transaction Details",
+  "paymentMethod": "Payment Method",
+  "transactionId": "Transaction ID",
+  
+  "searchCustomers": "Search customers...",
+  "noCustomersFound": "No customers found",
+  "addNewCustomer": "Add New Customer",
+  "customerLedger": "Customer Ledger",
+  "customerDetails": "Customer Details",
+  
+  "sendPaymentRequest": "Send Payment Request",
+  "shareViaWhatsapp": "Share via WhatsApp",
+  "shareViaSms": "Share via SMS",
+  "paymentLink": "Payment Link",
+  "paymentMessage": "Please pay your pending balance of ₹{amount}",
+  "@paymentMessage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "profile": "Profile",
+  "shopName": "Shop Name",
+  "upiId": "UPI ID",
+  "notifications": "Notifications",
+  "paymentReminders": "Payment Reminders",
+  "dataBackup": "Data Backup",
+  "dataRestore": "Data Restore",
+  "help": "Help",
+  "faq": "FAQ",
+  "logout": "Logout",
+  
+  "dateRange": "Date Range",
+  "exportCsv": "Export CSV",
+  "thisMonth": "This Month",
+  "lastMonth": "Last Month",
+  "thisYear": "This Year",
+  
+  "noDataAvailable": "No data available",
+  "noTransactionsFound": "No transactions found",
+  "noCustomersYet": "No customers yet",
+  "addYourFirstCustomer": "Add your first customer",
+  
+  "paymentSuccessful": "Payment Successful",
+  "paymentFailed": "Payment Failed",
+  "paymentPending": "Payment Pending",
+  "confirmPayment": "Confirm Payment",
+  "didYouReceivePayment": "Did you receive payment?",
+  "addTxnId": "Add TXN ID to auto-match",
+  
+  "upiAppNotFound": "UPI app not found - try QR or share pay link",
+  "tapTransactionToEdit": "Tap a transaction to edit note or mark as paid",
+  "openUpiApp": "Open UPI app → Complete payment → Return and confirm",
+  
+  "currency": "₹",
+  "rupees": "Rupees",
+  "paise": "Paise",
+  
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "thisWeek": "This Week",
+  "lastWeek": "Last Week",
+  
+  "permissionRequired": "Permission Required",
+  "cameraPermission": "Camera permission is required to scan QR codes",
+  "storagePermission": "Storage permission is required to save receipts",
+  "notificationPermission": "Notification permission is required for payment reminders",
+  "grantPermission": "Grant Permission",
+  
+  "offlineMode": "Offline Mode",
+  "syncWhenOnline": "Data will sync when you're back online",
+  "connectionRestored": "Connection restored. Syncing data...",
+  
+  "validationRequired": "This field is required",
+  "validationInvalidPhone": "Please enter a valid phone number",
+  "validationInvalidAmount": "Please enter a valid amount",
+  "validationAmountTooLow": "Amount must be greater than ₹1",
+  "validationAmountTooHigh": "Amount cannot exceed ₹1,00,000"
+}
