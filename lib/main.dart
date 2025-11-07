@@ -12,7 +12,7 @@ import 'core/services/firebase_service.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
-import 'features/customers/presentation/screens/customers_screen_simple.dart';
+import 'features/customers/presentation/screens/customers_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

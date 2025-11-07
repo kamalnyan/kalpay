@@ -12,7 +12,7 @@ import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../../shared/widgets/responsive_builder.dart';
 import '../../../../shared/widgets/lottie_animation.dart';
 import '../../../auth/providers/auth_provider.dart';
-import '../../../customers/providers/customer_provider.dart';
+import '../../../customers/providers/customer_providers.dart';
 import '../../../transactions/providers/transaction_provider.dart';
 import '../../../../core/services/upi_service.dart';
 import '../../../../shared/widgets/payment_reminder_bottom_sheet.dart';
@@ -64,10 +64,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final authState = ref.watch(authStateProvider);
     
-    if (currentUser == null) {
-      return Scaffold(
+    return authState.when(
+      data: (user) {
+        if (user == null) {
+          // User not authenticated, redirect to onboarding
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushReplacementNamed('/onboarding');
+          });
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const LoadingAnimation(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Redirecting...',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        
+        return _buildAuthenticatedHome(user);
+      },
+      loading: () => Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -81,11 +106,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-      );
-    }
+      ),
+      error: (error, stack) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: AppColors.dangerRed,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading user data',
+                style: AppTextStyles.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              AppButton.primary(
+                text: 'Retry',
+                onPressed: () => ref.invalidate(authStateProvider),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    final shopId = currentUser.uid;
-    final customersAsync = ref.watch(customersProvider(shopId));
+  Widget _buildAuthenticatedHome(User user) {
+    final shopId = user.uid;
+    final customersAsync = ref.watch(customersProvider);
     final recentTransactionsAsync = ref.watch(recentTransactionsProvider(shopId));
     final outstandingTransactionsAsync = ref.watch(outstandingTransactionsProvider(shopId));
 
@@ -661,11 +718,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _launchUpiPayment(dynamic transaction) async {
-    final userProfile = await ref.read(userProfileProvider(FirebaseAuth.instance.currentUser!.uid).future);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
     
-    if (userProfile?.upiId != null) {
+    final userProfile = await ref.read(userProfileProvider(currentUser.uid).future);
+    
+    if (userProfile != null && userProfile.upiId != null) {
       final result = await UpiService.launchUpiPayment(
-        upiId: userProfile!.upiId!,
+        upiId: userProfile.upiId!,
         merchantName: userProfile.shopName ?? 'Shop',
         amount: transaction.amount / 100.0,
         transactionNote: transaction.note ?? 'Payment',
@@ -698,11 +758,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _sharePaymentLink(dynamic transaction) async {
-    final userProfile = await ref.read(userProfileProvider(FirebaseAuth.instance.currentUser!.uid).future);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
     
-    if (userProfile?.upiId != null) {
+    final userProfile = await ref.read(userProfileProvider(currentUser.uid).future);
+    
+    if (userProfile != null && userProfile.upiId != null) {
       final paymentLink = UpiService.generateUpiUrl(
-        upiId: userProfile!.upiId!,
+        upiId: userProfile.upiId!,
         merchantName: userProfile.shopName ?? 'Shop',
         amount: transaction.amount / 100.0,
         transactionNote: transaction.note ?? 'Payment',

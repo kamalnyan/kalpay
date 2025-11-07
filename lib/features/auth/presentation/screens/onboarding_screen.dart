@@ -10,7 +10,7 @@ import '../../../../shared/widgets/responsive_builder.dart';
 import '../../../../shared/widgets/lottie_animation.dart';
 import '../../providers/auth_provider.dart';
 
-/// Onboarding screen with Firebase authentication
+/// Onboarding screen for role selection and phone authentication
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -19,18 +19,23 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  final PageController _pageController = PageController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _shopNameController = TextEditingController();
   final TextEditingController _upiIdController = TextEditingController();
-  
-  int _currentPage = 0;
-  String _selectedRole = 'shopkeeper';
+  UserRole _selectedRole = UserRole.shopkeeper;
+  bool _isLoading = false;
+  bool _isOtpSent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.addListener(_onPhoneChanged);
+    _otpController.addListener(_onOtpChanged);
+  }
 
   @override
   void dispose() {
-    _pageController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
     _shopNameController.dispose();
@@ -54,165 +59,155 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ref.read(authStateProvider.notifier).clearError();
       }
       
-      // Navigate based on auth step
-      switch (next.step) {
-        case AuthStep.otpVerification:
-          if (_currentPage != 2) _goToPage(2);
-          break;
-        case AuthStep.profileSetup:
-          if (_currentPage != 3) _goToPage(3);
-          break;
-        case AuthStep.completed:
-          Navigator.of(context).pushReplacementNamed('/home');
-          break;
-        default:
-          break;
+      if (next.step == AuthStep.otpVerification && !_isOtpSent) {
+        setState(() {
+          _isOtpSent = true;
+        });
+      }
+      
+      if (next.step == AuthStep.profileSetup) {
+        // Handle profile setup if needed
+        // For now, we'll skip this step
+      }
+      
+      if (next.step == AuthStep.completed) {
+        Navigator.of(context).pushReplacementNamed('/home');
       }
     });
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
-      body: SafeArea(
+      body: ResponsiveBuilder(
+        mobile: (context, constraints) => _buildMobileLayout(authState),
+        tablet: (context, constraints) => _buildTabletLayout(),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(AuthState authState) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppDimensions.paddingBase),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Progress indicator
-            _buildProgressIndicator(),
-            
-            // Main content
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (page) => setState(() => _currentPage = page),
-                children: [
-                  _buildRoleSelectionPage(),
-                  _buildPhoneInputPage(authState),
-                  _buildOtpVerificationPage(authState),
-                  _buildProfileSetupPage(authState),
-                ],
-              ),
-            ),
+            const SizedBox(height: 40),
+            _buildHeader(),
+            const SizedBox(height: 48),
+            if (!_isOtpSent) ...[
+              _buildRoleSelection(),
+              const SizedBox(height: 32),
+              _buildPhoneInput(),
+            ] else ...[
+              _buildOtpInput(),
+            ],
+            const SizedBox(height: 32),
+            _buildActionButton(),
+            const SizedBox(height: 24),
+            _buildTermsText(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.paddingBase),
-      child: Row(
-        children: List.generate(4, (index) {
-          final isActive = index <= _currentPage;
-          final isCompleted = index < _currentPage;
-          
-          return Expanded(
-            child: Container(
-              height: 4,
-              margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
-              decoration: BoxDecoration(
-                color: isCompleted 
-                    ? AppColors.accentGreen 
-                    : isActive 
-                        ? AppColors.primaryBlue 
-                        : AppColors.textSecondary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+  Widget _buildTabletLayout() {
+    return SafeArea(
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 48),
+                if (!_isOtpSent) ...[
+                  _buildRoleSelection(),
+                  const SizedBox(height: 32),
+                  _buildPhoneInput(),
+                ] else ...[
+                  _buildOtpInput(),
+                ],
+                const SizedBox(height: 32),
+                _buildActionButton(),
+                const SizedBox(height: 24),
+                _buildTermsText(),
+              ],
             ),
-          );
-        }),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildRoleSelectionPage() {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingBase),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 40),
-          
-          // Header
-          Container(
-            width: 80,
-            height: 80,
-            child: Image.asset("assets/icons/logo_big_trans.png", fit: BoxFit.cover),
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          child: Image.asset("assets/icons/logo_big_trans.png",fit: BoxFit.cover)
+        ),
+        const SizedBox(height: 24),
+        Text(
+          context.l10n.welcome,
+          style: AppTextStyles.h1,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.l10n.tagline,
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Welcome to KalPay',
-            style: AppTextStyles.h1.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Smart PayLater Ledger for Shops',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 48),
-          
-          // Role selection
-          Text(
-            'I am a...',
-            style: AppTextStyles.h3.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          _buildRoleOption(
-            title: 'Shopkeeper',
-            subtitle: 'Manage customer ledger and payments',
-            icon: Icons.storefront_outlined,
-            value: 'shopkeeper',
-          ),
-          const SizedBox(height: 16),
-          _buildRoleOption(
-            title: 'Customer',
-            subtitle: 'View and pay your bills',
-            icon: Icons.person_outlined,
-            value: 'customer',
-          ),
-          
-          const Spacer(),
-          
-          AppButton.primary(
-            text: 'Continue',
-            onPressed: () => _goToPage(1),
-            isFullWidth: true,
-          ),
-          
-          const SizedBox(height: 24),
-        ],
-      ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
-  Widget _buildRoleOption({
+  Widget _buildRoleSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.selectRole,
+          style: AppTextStyles.h3,
+        ),
+        const SizedBox(height: 16),
+        _buildRoleCard(
+          role: UserRole.shopkeeper,
+          title: context.l10n.shopkeeper,
+          icon: Icons.store_outlined,
+          isSelected: _selectedRole == UserRole.shopkeeper,
+        ),
+        const SizedBox(height: 12),
+        _buildRoleCard(
+          role: UserRole.customer,
+          title: context.l10n.customer,
+          icon: Icons.person_outlined,
+          isSelected: _selectedRole == UserRole.customer,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoleCard({
+    required UserRole role,
     required String title,
-    required String subtitle,
     required IconData icon,
-    required String value,
+    required bool isSelected,
   }) {
-    final isSelected = _selectedRole == value;
-    
     return GestureDetector(
-      onTap: () => setState(() => _selectedRole = value),
+      onTap: () => setState(() => _selectedRole = role),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimensions.paddingBase),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryBlue.withOpacity(0.1) : AppColors.white,
           border: Border.all(
-            color: isSelected ? AppColors.primaryBlue : AppColors.textSecondary.withOpacity(0.3),
+            color: isSelected ? AppColors.primaryBlue : AppColors.borderLight,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(AppDimensions.radiusDefault),
@@ -220,45 +215,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryBlue : AppColors.textSecondary.withOpacity(0.1),
+                color: isSelected 
+                    ? AppColors.primaryBlue 
+                    : AppColors.primaryBlue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? AppColors.white : AppColors.textSecondary,
-                size: 24,
+                color: isSelected ? AppColors.white : AppColors.primaryBlue,
+                size: AppDimensions.iconMedium,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              child: Text(
+                title,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? AppColors.primaryBlue : AppColors.textPrimary,
+                ),
               ),
             ),
             if (isSelected)
-              Icon(
+              const Icon(
                 Icons.check_circle,
                 color: AppColors.primaryBlue,
-                size: 24,
+                size: AppDimensions.iconMedium,
               ),
           ],
         ),
@@ -266,260 +250,260 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPhoneInputPage(AuthState authState) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingBase),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 40),
-          
-          Icon(
-            Icons.phone_outlined,
-            size: 64,
-            color: AppColors.primaryBlue,
-          ),
-          const SizedBox(height: 24),
-          
-          Text(
-            'Enter your phone number',
-            style: AppTextStyles.h2.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
+  Widget _buildPhoneInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.phoneNumber,
+          style: AppTextStyles.labelLarge,
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          maxLength: 10,
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: 'Enter 10-digit mobile number',
+            prefixIcon: const Icon(Icons.phone_outlined,color: AppColors.primaryBlue,),
+            prefixText: '+91 ',
+            filled: true,
+            fillColor: AppColors.white,
+            counterText: '', // Hide character counter
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.borderLight),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'We\'ll send you a verification code',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.borderLight),
             ),
-            textAlign: TextAlign.center,
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.dangerRed),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.dangerRed, width: 2),
+            ),
           ),
-          
-          const SizedBox(height: 48),
-          
-          AppInputField(
-            controller: _phoneController,
-            hint: 'Enter 10-digit mobile number',
-            keyboardType: TextInputType.phone,
-            prefixIcon: const Icon(Icons.phone_outlined),
-          ),
-          
-          const Spacer(),
-          
-          AppButton.primary(
-            text: authState.isLoading ? 'Sending...' : 'Send OTP',
-            onPressed: authState.isLoading ? null : _sendOtp,
-            isFullWidth: true,
-            isLoading: authState.isLoading,
-          ),
-          
-          const SizedBox(height: 24),
-          _buildTermsText(),
-        ],
-      ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Phone number is required';
+            }
+            if (!_isValidPhoneNumber(value)) {
+              return 'Please enter a valid 10-digit mobile number';
+            }
+            return null;
+          },
+        ),
+      ],
     );
   }
 
-  Widget _buildOtpVerificationPage(AuthState authState) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingBase),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 40),
-          
-          Icon(
-            Icons.security_outlined,
-            size: 64,
-            color: AppColors.primaryBlue,
+  Widget _buildOtpInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.otpSent(_phoneController.text),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
           ),
-          const SizedBox(height: 24),
-          
-          Text(
-            'Verify your phone',
-            style: AppTextStyles.h2.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          context.l10n.otp,
+          style: AppTextStyles.labelLarge,
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _otpController,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          maxLength: 6,
+          style: AppTextStyles.h2,
+          decoration: InputDecoration(
+            hintText: 'Enter 6-digit OTP',
+            filled: true,
+            fillColor: AppColors.white,
+            counterText: '', // Hide character counter
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.borderLight),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Enter the 6-digit code sent to\n+91 ${_phoneController.text}',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.borderLight),
             ),
-            textAlign: TextAlign.center,
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.dangerRed),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMicro),
+              borderSide: const BorderSide(color: AppColors.dangerRed, width: 2),
+            ),
           ),
-          
-          const SizedBox(height: 48),
-          
-          AppInputField(
-            controller: _otpController,
-            hint: 'Enter 6-digit OTP',
-            keyboardType: TextInputType.number,
-            prefixIcon: const Icon(Icons.lock_outlined),
-            maxLength: 6,
-          ),
-          
-          const SizedBox(height: 16),
-          
-          TextButton(
-            onPressed: authState.isLoading ? null : _sendOtp,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'OTP is required';
+            }
+            if (value.length != 6) {
+              return 'Please enter 6-digit OTP';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: _resendOtp,
             child: Text(
-              'Resend OTP',
+              context.l10n.resendOtp,
               style: AppTextStyles.link,
             ),
           ),
-          
-          const Spacer(),
-          
-          AppButton.primary(
-            text: authState.isLoading ? 'Verifying...' : 'Verify OTP',
-            onPressed: authState.isLoading ? null : _verifyOtp,
-            isFullWidth: true,
-            isLoading: authState.isLoading,
-          ),
-          
-          const SizedBox(height: 24),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildProfileSetupPage(AuthState authState) {
-    return Padding(
-      padding: const EdgeInsets.all(AppDimensions.paddingBase),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 40),
-          
-          Icon(
-            _selectedRole == 'shopkeeper' ? Icons.storefront_outlined : Icons.person_outlined,
-            size: 64,
-            color: AppColors.primaryBlue,
-          ),
-          const SizedBox(height: 24),
-          
-          Text(
-            _selectedRole == 'shopkeeper' ? 'Setup your shop' : 'Complete your profile',
-            style: AppTextStyles.h2.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _selectedRole == 'shopkeeper' 
-                ? 'Add your shop details to get started'
-                : 'Just a few more details',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 48),
-          
-          if (_selectedRole == 'shopkeeper') ...[
-            AppInputField(
-              controller: _shopNameController,
-              hint: 'Enter your shop name',
-              prefixIcon: const Icon(Icons.store_outlined),
-            ),
-            const SizedBox(height: 16),
-            AppInputField(
-              controller: _upiIdController,
-              hint: 'yourname@paytm',
-              prefixIcon: const Icon(Icons.payment_outlined),
-            ),
-          ],
-          
-          const Spacer(),
-          
-          AppButton.primary(
-            text: authState.isLoading ? 'Creating Profile...' : 'Complete Setup',
-            onPressed: authState.isLoading ? null : _createProfile,
-            isFullWidth: true,
-            isLoading: authState.isLoading,
-          ),
-          
-          const SizedBox(height: 24),
-        ],
-      ),
+  Widget _buildActionButton() {
+    return AppButton.primary(
+      text: _isOtpSent ? context.l10n.verifyOtp : context.l10n.continueText,
+      onPressed: _canProceed() ? _handleAction : null,
+      isLoading: _isLoading,
+      isFullWidth: true,
     );
   }
 
   Widget _buildTermsText() {
     return Text(
-      'By continuing, you agree to our Terms of Service and Privacy Policy',
-      style: AppTextStyles.bodySmall.copyWith(
-        color: AppColors.textSecondary,
-      ),
+      context.l10n.termsConditions,
+      style: AppTextStyles.caption,
       textAlign: TextAlign.center,
     );
   }
 
-  void _goToPage(int page) {
-    setState(() => _currentPage = page);
-    _pageController.animateToPage(
-      page,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+  void _onPhoneChanged() {
+    setState(() {}); // Trigger rebuild to update button state
   }
 
-  void _sendOtp() {
-    if (_phoneController.text.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid 10-digit phone number'),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
-      return;
+  void _onOtpChanged() {
+    setState(() {}); // Trigger rebuild to update button state
+  }
+
+  bool _canProceed() {
+    if (_isOtpSent) {
+      return _otpController.text.length == 6;
     }
-
-    final phoneNumber = '+91${_phoneController.text}';
-    ref.read(authStateProvider.notifier).sendOTP(phoneNumber);
+    return _selectedRole != null && _isValidPhoneNumber(_phoneController.text);
   }
 
-  void _verifyOtp() {
-    if (_otpController.text.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter the 6-digit OTP'),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
-      return;
+  bool _isValidPhoneNumber(String phone) {
+    // Remove any non-digit characters
+    final digitsOnly = phone.replaceAll(RegExp(r'[^\d]'), '');
+    // Check if it's exactly 10 digits and starts with 6-9
+    return digitsOnly.length == 10 && RegExp(r'^[6-9]').hasMatch(digitsOnly);
+  }
+
+  void _handleAction() async {
+    if (_isOtpSent) {
+      await _verifyOtp();
+    } else {
+      await _sendOtp();
     }
-
-    ref.read(authStateProvider.notifier).verifyOTP(_otpController.text);
   }
 
-  void _createProfile() {
-    if (_selectedRole == 'shopkeeper' && _shopNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your shop name'),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
-      return;
+  Future<void> _sendOtp() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final phoneNumber = '+91${_phoneController.text}';
+      await ref.read(authStateProvider.notifier).sendOTP(phoneNumber);
+      setState(() {
+        _isLoading = false;
+        _isOtpSent = true;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send OTP: $e'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     }
-
-    ref.read(authStateProvider.notifier).createProfile(
-      role: _selectedRole,
-      shopName: _selectedRole == 'shopkeeper' ? _shopNameController.text : null,
-      upiId: _selectedRole == 'shopkeeper' && _upiIdController.text.isNotEmpty 
-          ? _upiIdController.text 
-          : null,
-    );
   }
+
+  Future<void> _verifyOtp() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      await ref.read(authStateProvider.notifier).verifyOTP(_otpController.text);
+      // Navigation will be handled by the auth state listener
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        String errorMessage = e.toString();
+        if (errorMessage.contains('PigeonUserDetails')) {
+          errorMessage = 'OTP verification failed. Please try again.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
+  }
+
+  void _resendOtp() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final phoneNumber = '+91${_phoneController.text}';
+      await ref.read(authStateProvider.notifier).sendOTP(phoneNumber);
+      setState(() {
+        _isLoading = false;
+        _otpController.clear();
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('OTP sent successfully'),
+            backgroundColor: AppColors.accentGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to resend OTP: $e'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
+  }
+  
 }
+
+enum UserRole { shopkeeper, customer }

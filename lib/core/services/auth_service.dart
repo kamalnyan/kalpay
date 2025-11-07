@@ -54,7 +54,16 @@ class AuthService {
       );
       return await _signInWithCredential(credential);
     } catch (e) {
-      throw Exception('Invalid OTP: ${e.toString()}');
+      // Handle specific Firebase Auth errors
+      if (e.toString().contains('PigeonUserDetails')) {
+        throw Exception('Invalid OTP: Please try again');
+      } else if (e.toString().contains('invalid-verification-code')) {
+        throw Exception('Invalid OTP: Please check your code');
+      } else if (e.toString().contains('session-expired')) {
+        throw Exception('OTP expired: Please request a new code');
+      } else {
+        throw Exception('Invalid OTP: ${e.toString()}');
+      }
     }
   }
 

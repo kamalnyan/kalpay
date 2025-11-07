@@ -111,25 +111,42 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         otp: otp,
       );
 
-      if (userCredential != null) {
+      if (userCredential != null && userCredential.user != null) {
         // Check if user profile exists
-        final userProfile = await _authService.getUserProfile(userCredential.user!.uid);
-        
-        if (userProfile != null) {
-          state = state.copyWith(
-            isLoading: false,
-            user: userProfile,
-            step: AuthStep.completed,
-          );
-        } else {
+        try {
+          final userProfile = await _authService.getUserProfile(userCredential.user!.uid);
+          
+          if (userProfile != null) {
+            state = state.copyWith(
+              isLoading: false,
+              user: userProfile,
+              step: AuthStep.completed,
+            );
+          } else {
+            // User authenticated but no profile, create one
+            state = state.copyWith(
+              isLoading: false,
+              step: AuthStep.profileSetup,
+            );
+          }
+        } catch (profileError) {
+          // If profile check fails, still mark as authenticated
           state = state.copyWith(
             isLoading: false,
             step: AuthStep.profileSetup,
           );
         }
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Authentication failed',
+        );
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false, 
+        error: e.toString().replaceAll('Exception: ', ''),
+      );
     }
   }
 

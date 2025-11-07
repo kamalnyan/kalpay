@@ -8,10 +8,10 @@ import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_input_field.dart';
 import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/responsive_builder.dart';
-import '../../../shared/models/customer_model.dart' as models;
-import '../providers/customer_providers.dart';
-import '../../auth/providers/auth_providers.dart';
-import 'customer_ledger_screen_minimal.dart';
+import '../../../../shared/models/customer_model.dart' as models;
+import '../../providers/customer_providers.dart';
+import '../../../auth/providers/auth_provider.dart';
+import 'customer_ledger_screen.dart';
 
 /// Customers list screen
 class CustomersScreen extends ConsumerStatefulWidget {
@@ -79,13 +79,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           padding: const EdgeInsets.all(AppDimensions.paddingBase),
           child: AppInputField(
             controller: _searchController,
-            hintText: context.l10n.searchCustomers,
-            prefixIcon: Icons.search,
-            suffixIcon: _searchController.text.isNotEmpty ? Icons.clear : null,
-            onSuffixIconPressed: () {
-              _searchController.clear();
-              _onSearchChanged();
-            },
+            hint: context.l10n.searchCustomers,
+            prefixIcon: const Icon(Icons.search),
           ),
         ),
         Expanded(
@@ -106,13 +101,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 padding: const EdgeInsets.all(AppDimensions.paddingBase),
                 child: AppInputField(
                   controller: _searchController,
-                  hintText: context.l10n.searchCustomers,
-                  prefixIcon: Icons.search,
-                  suffixIcon: _searchController.text.isNotEmpty ? Icons.clear : null,
-                  onSuffixIconPressed: () {
-                    _searchController.clear();
-                    _onSearchChanged();
-                  },
+                  hint: context.l10n.searchCustomers,
+                  prefixIcon: const Icon(Icons.search),
                 ),
               ),
               Expanded(
@@ -198,14 +188,14 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  customer.phoneNumber,
+                  customer.phone,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatDate(customer.updatedAt),
+                  _formatDate(customer.updatedAt ?? customer.createdAt),
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -218,7 +208,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             children: [
               if (hasOutstanding)
                 Text(
-                  '₹${outstandingAmountRupees.toStringAsFixed(0)}',
+                      '₹${outstandingAmount.toStringAsFixed(0)}',
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.w600,

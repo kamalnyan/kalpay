@@ -174,8 +174,18 @@ class CustomerFormNotifier extends StateNotifier<CustomerFormState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
+      final user = ref.read(currentUserProvider);
+      if (user == null) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'User not authenticated',
+        );
+        return false;
+      }
+
       final customer = models.Customer(
         id: '', // Will be set by Firestore
+        shopId: user.uid,
         name: state.name,
         phone: state.phone,
         email: state.email.isNotEmpty ? state.email : null,
